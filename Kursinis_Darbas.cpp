@@ -1,16 +1,17 @@
 #include <iostream>
 #include <vector>
-#include <ctime>
+#include <chrono> // Tikslesniam laikui
 #include <iomanip>
 #include <cstdlib>
+#include <functional>
 
 using namespace std;
 
-// Global�s kintamieji statistikai
+// Globalūs kintamieji statistikai
 long long comparisons = 0;
 long long swaps = 0;
 
-// --- 1. �terpimo rikiavimas (Insertion Sort) ---
+// --- 1. Įterpimo rikiavimas (Insertion Sort) ---
 void insertionSort(vector<int>& arr) {
     int n = arr.size();
     for (int i = 1; i < n; i++) {
@@ -30,7 +31,7 @@ void insertionSort(vector<int>& arr) {
     }
 }
 
-// --- 2. S�lajinis rikiavimas (Merge Sort) ---
+// --- 2. Sąlajinis rikiavimas (Merge Sort) ---
 void merge(vector<int>& arr, int left, int mid, int right) {
     int n1 = mid - left + 1;
     int n2 = right - mid;
@@ -61,18 +62,18 @@ void mergeSort(vector<int>& arr, int left, int right) {
     }
 }
 
-// Testavimo funkcija
-void runTest(string algoName, void (*sortFunc)(vector<int>&), vector<int> data) {
+// Profesionalus testavimo wrapper'is
+void runTest(string algoName, function<void(vector<int>&)> sortFunc, vector<int> data) {
     comparisons = 0;
     swaps = 0;
 
-    clock_t start = clock();
+    auto start = chrono::high_resolution_clock::now();
     sortFunc(data);
-    clock_t stop = clock();
+    auto end = chrono::high_resolution_clock::now();
 
-    double duration = (double)(stop - start) / CLOCKS_PER_SEC * 1000000;
+    auto duration = chrono::duration_cast<chrono::microseconds>(end - start).count();
 
-    cout << left << setw(15) << algoName << " | Laikas: " << setw(10) << (long)duration
+    cout << left << setw(15) << algoName << " | Laikas: " << setw(10) << duration
          << " us | Palyginimai: " << setw(10) << comparisons
          << " | Sukeitimai: " << setw(10) << swaps << endl;
 }
@@ -81,22 +82,18 @@ int main() {
     int sizes[] = {5000, 10000, 50000};
 
     for (int size : sizes) {
-        cout << "\n--- Dydis: " << size << " ---" << endl;
         vector<int> data(size);
         for(int i = 0; i < size; i++) data[i] = rand() % size;
 
+        cout << "\n--- Dydis: " << size << " ---" << endl;
+
+        // Testuojame Insertion Sort
         runTest("Insertion Sort", insertionSort, data);
 
-        // Merge sort kvietimas
-        comparisons = 0; swaps = 0;
-        clock_t start = clock();
-        mergeSort(data, 0, data.size() - 1);
-        clock_t stop = clock();
-        double duration = (double)(stop - start) / CLOCKS_PER_SEC * 1000000;
-
-        cout << left << setw(15) << "Merge Sort" << " | Laikas: " << setw(10) << (long)duration
-             << " us | Palyginimai: " << setw(10) << comparisons
-             << " | Sukeitimai: " << setw(10) << swaps << endl;
+        // Testuojame Merge Sort (naudojame lambda funkciją, kad atitiktų formatą)
+        runTest("Merge Sort", [](vector<int>& v) { 
+            mergeSort(v, 0, v.size() - 1); 
+        }, data);
     }
     return 0;
 }
